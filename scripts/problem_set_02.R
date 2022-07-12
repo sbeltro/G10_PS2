@@ -450,3 +450,115 @@ for (i in recode_vars2_per){
                              yes = 0, 
                              test_personas[,i])
 }
+
+#  ** Hogares ----
+
+# Cargar la base de datos
+test_hogares <- readRDS("stores/dataPS2RDS/test_hogares.rds")
+
+#  ** Base agregada ----
+test <- merge(test_personas, test_hogares, by = "id", all = TRUE)
+
+#    *** Limpieza de la base ----
+test <- test %>%
+  mutate(subsidiado     = case_when(P6100 == 3 ~ 1, 
+                                    P6100 == 1 | P6100 == 2 | P6100 == 9 | is.na(P6100) == T ~ 0),
+         subFamiliar    = case_when(subFamiliar == 1 ~ 1,
+                                    subFamiliar == 2 | subFamiliar == 9 | is.na(subFamiliar) == T ~ 0),
+         subEducativo   = case_when(subEducativo == 1 ~ 1, 
+                                    subEducativo == 2 | subEducativo == 9 | is.na(subEducativo) == T ~ 0),
+         P7510s1        = case_when(P7510s1 == 1 ~ 1,
+                                    P7510s1 == 2 | P7510s1 == 9 | is.na(P7510s1) == T ~ 0),
+         P7510s2        = case_when(P7510s2 == 1 ~ 1,
+                                    P7510s2 == 2 | P7510s2 == 9 | is.na(P7510s2) == T ~ 0),
+         P7510s3        = case_when(P7510s3 == 1 ~ 1,
+                                    P7510s3 == 2 | P7510s3 == 9 | is.na(P7510s3) == T ~ 0),
+         profesional    = case_when(educ == 0|educ == 3|educ == 8 ~ 0, 
+                                    educ == 12|educ == 16|educ == 20 ~ 1),
+         personaxCuarto = Nper / P5010)
+
+#Agrupar varibles por id a la base de test
+Subsidiado_hgt <- test %>%
+  group_by(id) %>%
+  summarize(subsidiado = max(subsidiado))
+
+subFamiliar_hgt <- test %>%
+  group_by(id) %>%
+  summarize(subFamiliar = max(subFamiliar))
+
+subEducativo_hgt <- test %>%
+  group_by(id) %>%
+  summarize(subEducativo = max(subEducativo))
+
+ayudaHogaresnal_hgt <- test %>%
+  group_by(id) %>%
+  summarize(P7510s1 = max(P7510s1))
+
+ayudaHogaresext_hgt <- test %>%
+  group_by(id) %>% 
+  summarize(P7510s2 = max(P7510s2))
+
+ayudaInstituciones_hgt <- test %>%
+  group_by(id) %>%
+  summarize(P7510s3 = max(P7510s3))
+
+profesional_hgt <- test %>%
+  group_by(id) %>%
+  summarize(profesional = max(profesional))
+
+personaxCuarto_hgt <- test %>%
+  group_by(id) %>%
+  summarize(personaxCuarto[1])
+
+educ_hgt <- test %>% 
+  group_by(id) %>% 
+  summarize(educ_hg = mean(educ))
+
+#Adicionar las variables recodificadas anteriormente a la base de test hogares por id 
+test_hogares <- left_join(test_hogares,Subsidiado_hgt, by="id")
+test_hogares <- left_join(test_hogares,subFamiliar_hgt, by="id")
+test_hogares <- left_join(test_hogares,subEducativo_hgt, by="id")
+test_hogares <- left_join(test_hogares,ayudaHogaresnal_hgt, by="id")
+test_hogares <- left_join(test_hogares,ayudaHogaresext_hgt, by="id")
+test_hogares <- left_join(test_hogares,ayudaInstituciones_hgt, by="id")
+test_hogares <- left_join(test_hogares,profesional_hgt, by="id")
+test_hogares <- left_join(test_hogares,personaxCuarto_hgt, by="id")
+test_hogares <- left_join(test_hogares, educ_hgt, by = "id")
+
+#Cambiar los nombres de las variables en la base de test hogares
+colnames(test_hogares)[which(colnames(test_hogares)=="subsidiado")]        = "Subsidiado_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="subFamiliar")]       = "subFamiliar_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="subEducativo")]      = "subEducativo_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="P7510s1")]           = "ayudaHogaresnal_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="P7510s2")]           = "ayudaHogaresext_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="P7510s3")]           = "ayudaInstituciones_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="profesional")]       = "profesional_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="personaxCuarto[1]")] = "personaxCuarto_hg"
+colnames(test_hogares)[which(colnames(test_hogares)=="educ_hg")]          = "educ_hg"
+
+#Seleccionar las variables de interes y crear una nueva base
+test_hogares_t <- test_hogares %>% 
+  select(id, Subsidiado_hg, ayudaInstituciones_hg, personaxCuarto_hg, educ_hg)
+
+#Modificar las variables dummy a factor
+test_hogares_t <- test_hogares_t %>%
+  mutate(Subsidiado_hg         = factor(Subsidiado_hg, levels = c(1,0)),
+         ayudaInstituciones_hg = factor(ayudaInstituciones_hg, levels = c(1,0)))
+
+#Renombrar la variables tipo factor
+test_hogares_t$Subsidiado_hg <- factor((test_hogares_t$Subsidiado_hg), 
+                                       levels = c(0, 1), 
+                                       labels = c("No", "Si"))
+
+test_hogares_t$ayudaInstituciones_hg <- factor((test_hogares_t$ayudaInstituciones_hg), 
+                                               levels = c(0, 1), 
+                                               labels = c("No", "Si"))
+
+test_hogares <- test_hogares %>%
+  mutate(Subsidiado_hg = factor(Subsidiado_hg),
+         subFamiliar_hg = factor(subFamiliar_hg),
+         subEducativo_hg = factor(subEducativo_hg),
+         ayudaHogaresnal_hg = factor(ayudaHogaresnal_hg),
+         ayudaHogaresext_hg = factor(ayudaHogaresext_hg),
+         ayudaInstituciones_hg = factor(ayudaInstituciones_hg),
+         profesional_hg = factor(profesional_hg))
