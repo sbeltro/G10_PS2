@@ -1001,3 +1001,113 @@ fp_mod5 <- cm5[2,1] / sum(cm5[2,])
 
 # Ratio Falsos Negativos
 fn_mod5 <- cm5[1,2] / sum(cm5[1,])
+
+# 6. Logit  + Lasso maximizado + Five-Stats Summary + Downsampling ----
+
+#Establecer una semmilla y crear una muestra de datos de train_hogares con el método de downsampling
+set.seed(33)
+downsam <- downSample(x = train_hogares,
+                      y = train_hogares$Pobre,
+                      yname = "Pobre")
+
+#Explorar las dimensiones de la muestra de downsampling creada y revisar como quedo la distribución para la variable Pobre
+dim(downsam)
+table(downsam$Pobre)
+
+#Establecer una semilla y estimar el modelo
+set.seed(33)
+logd <- train(Pobre ~ subFamiliar_hg + ayudaInstituciones_hg + profesional_hg,
+              data = downsam,
+              method = "glmnet",
+              trControl = ctrl,
+              family = "binomial",
+              metric = "Sens",
+              tuneGrid = expand.grid(alpha = 0, lambda = lam),
+              preProcess = c("center", "scale"))
+
+#Crear los predictores para cada observación y testearlos con la condión de r
+prueba6$ldown <- predict(logd, newdata = train_hogares, type = "prob")[,1]
+prueba6$ldown <- ifelse(prueba6$ldown > r,
+                        yes = 1,
+                        no  = 0)
+
+# Evaluar el desempeño del modelo
+cm_prob6 <- confusionMatrix(data = factor(prueba6$ldown), 
+                            reference = factor(prueba6$Pobre), 
+                            mode = "sens_spec", 
+                            positive = "1")
+cm_prob6
+
+#Crear las variable de clase predict y performance del paquete ROCR con la muestra de upsampling
+predowsam <- prediction(predict(logd, type = "prob")[,2], downsam$Pobre)
+perdowsam <- performance(predowsam, "tpr", "fpr")
+
+# AUC
+auc_mod6 <- performance(predowsam, measure = "auc")
+auc_mod6 <- auc_mod6@y.values[[1]]
+
+# Calcular otros indicadores
+cm6 <- cm_prob6$table
+
+# Ratio Falsos Positivos
+fp_mod6 <- cm5[2,1] / sum(cm6[2,])
+
+# Ratio Falsos Negativos
+fn_mod6 <- cm5[1,2] / sum(cm6[1,])
+
+# Comparar ROC, AUC, Falsos-positivos y Falsos-negativos de los modelos ----
+
+#Crear un data frame para la tabla de comparación y agregarle sus respectivos valores para cada modelo
+Class_models <- data.frame(matrix(NA, 6, 4))
+colnames(Class_models) <- c("Modelo", "AUC", "Falsos-positivos", "Falsos-negativos")
+
+Class_models[1,1] = "M.1"
+Class_models[2,1] = "M.2"
+Class_models[3,1] = "M.3"
+Class_models[4,1] = "M.4"
+Class_models[5,1] = "M.5"
+Class_models[6,1] = "M.6"
+
+Class_models[1,2] = auc_mod1
+Class_models[2,2] = auc_mod2
+Class_models[3,2] = auc_mod3
+Class_models[4,2] = auc_mod4
+Class_models[5,2] = auc_mod5
+Class_models[6,2] = auc_mod6
+
+Class_models[1,3] = fp_mod1
+Class_models[2,3] = fp_mod2
+Class_models[3,3] = fp_mod3
+Class_models[4,3] = fp_mod4
+Class_models[5,3] = fp_mod5
+Class_models[6,3] = fp_mod6
+
+Class_models[1,4] = fn_mod1
+Class_models[2,4] = fn_mod2
+Class_models[3,4] = fn_mod3
+Class_models[4,4] = fn_mod4
+Class_models[5,4] = fn_mod5
+Class_models[6,4] = fn_mod6
+
+#Exportar la tabla a un excel
+write_xlsx(Class_modelos, "views/Class_models.xlsx")
+
+#Crear una gráfica que contenga las curvas de ROC de los 6 modelos y exportar la imagen
+png("views/G2.png", width = 564, height = 422)
+plot(perlogitn, col = "red" )
+par(new = TRUE)
+plot(perlog2, col = "black" )
+par(new = TRUE)
+plot(perlog5, col = "blue")
+par(new = TRUE)
+plot(perloglas, col = "green")
+par(new = TRUE)
+plot(perupsam, col = "violet")
+par(new = TRUE)
+plot(perdowsam, col = "orange")
+legend(x = "right", 
+       legend = c("M.1", "M.2", "M.3", "M.4", "M.5", "M.6"), 
+       fill = c("red", "black", "blue", "green", "violet", "orange"))
+abline(a = 0, b = 1)
+dev.off()
+
