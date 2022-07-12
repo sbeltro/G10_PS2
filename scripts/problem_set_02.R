@@ -901,3 +901,103 @@ fp_mod3 <- cm3[2,1] / sum(cm3[2,])
 
 # Ratio Falsos Negativos
 fn_mod3 <- cm3[1,2] / sum(cm3[1,])
+
+# 4. Logit  + Lasso maximizado + Five-Stats Summary ----
+
+#Crear una lista de lambdas de -3 a 10 con un salto de 0,05
+lam <- 10 ^ seq(-3, 0.05, length = 10)
+
+#Establecer una semmilla y estimar el modelo
+set.seed(33)
+loglas <- train(Pobre ~ ayudaInstituciones_hg + ayudaHogaresnal_hg + educ_hg,
+                data = train_hogares,
+                method = "glmnet",
+                trControl = ctrl,
+                family = "binomial",
+                metric = "ROC",
+                tuneGrid = expand.grid(alpha = 0,lambda = lam),
+                preProcess = c("center", "scale"))
+
+#Crear los predictores para cada observación y evaluar con la condión de r
+prueba4$logl <- predict(loglas, newdata = train_hogares, type="prob")[,1]
+prueba4$logl <- ifelse(prueba4$logl > r, 
+                       yes = 1, 
+                       no  = 0)
+
+# Evaluar el desempeño del modelo
+cm_prob4 <- confusionMatrix(data=factor(prueba4$logl), 
+                            reference = factor(prueba4$Pobre), 
+                            mode = "sens_spec", 
+                            positive = "1")
+
+cm_prob4
+
+# Crear las variable de clase predict y performance del paquete ROCR
+preloglas <- prediction(predict(loglas, type = "prob")[,2], prueba4$Pobre)
+perloglas <- performance(preloglas, "tpr", "fpr")
+
+# AUC
+auc_mod4 <- performance(preloglas, measure = "auc")
+auc_mod4 <- auc_mod4@y.values[[1]]
+
+# Calcular otros indicadores
+cm4 <- cm_prob4$table
+
+# Ratio Falsos Positivos
+fp_mod4 <- cm4[2,1] / sum(cm4[2,])
+
+# Ratio Falsos Negativos
+fn_mod4 <- cm4[1,2] / sum(cm4[1,])
+
+# 5. Logit  + Lasso maximizado + Five-Stats Summary + Upsampling ----
+
+# Establecer una semilla y crear una muestra de datos de train_hogares con el método de upsampling
+set.seed(33)
+upsam <- upSample(x = train_hogares,
+                  y = train_hogares$Pobre,
+                  yname = "Pobre")
+
+# Explorar las dimensiones de la muestra de upsampling creada y revisar como quedo la distribución para la variable Pobre
+dim(upsam)
+table(upsam$Pobre)
+
+# Establecer una semilla y estimar el modelo
+set.seed(33)
+logs <- train(Pobre ~ subEducativo_hg + ayudaInstituciones_hg + profesional_hg,
+              data = upsam,
+              method = "glmnet",
+              trControl = ctrl,
+              family = "binomial",
+              metric = "Sens",
+              tuneGrid = expand.grid(alpha = 0, lambda = lam),
+              preProcess = c("center", "scale"))
+
+#Crear los predictores para cada observación y evaluar con la condión de r
+prueba5$lsam <- predict(logs, newdata = train_hogares, type = "prob")[,1]
+prueba5$lsam <- ifelse(prueba5$lsam > r, 
+                       yes = 1, 
+                       no  = 0)
+
+#Crear las variable de clase predict y performance del paquete ROCR
+cm_prob5 <- confusionMatrix(data = factor(prueba5$lsam), 
+                            reference = factor(prueba5$Pobre), 
+                            mode = "sens_spec",
+                            positive = "1")
+cm_prob5
+
+#Crear las variable de clase predict y performance del paquete ROCR con la muestra de upsampling
+preupsam <- prediction(predict(logs, type = "prob")[,2], upsam$Pobre)
+perupsam <- performance(preupsam, "tpr", "fpr")
+
+# AUC
+auc_mod5 <- performance(preupsam, measure = "auc")
+auc_mod5 <- auc_mod5@y.values[[1]]
+
+# Calcular otros indicadores
+cm5 <- cm_prob5$table
+
+# Ratio Falsos Positivos
+fp_mod5 <- cm5[2,1] / sum(cm5[2,])
+
+# Ratio Falsos Negativos
+fn_mod5 <- cm5[1,2] / sum(cm5[1,])
