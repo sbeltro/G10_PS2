@@ -1339,3 +1339,51 @@ table(train_hogares_Ing$Pobre)
 table(train_hogares_Ing$Pobre_construida)
 with(train_hogares_Ing,prop.table(table(Pobre, Pobre_construida)))
 
+# Evaluar desempeño modelo seleccionado ----
+cm_modelo = confusionMatrix(data = factor(train_hogares_Ing$Pobre_construida), 
+                            reference = factor(train_hogares_Ing$Pobre), 
+                            mode = "sens_spec", 
+                            positive = "1")
+cm_modelo
+
+# Calcular otros indicadores
+cm = cm_modelo$table
+
+# Ratio Falsos Positivos
+cm[2,1] / sum(cm[2,])
+
+# Ratio Falsos Negativos
+cm[1,2] / sum(cm[1,]) 
+
+# Estimar fuera de muestra ----
+test_personas$elasticIng_1bl <- predict(elasticIng_1bl, newdata = test_personas)
+
+sum_ingresos <- test_personas %>% 
+  group_by(id) %>% 
+  summarize(Ingreso_predicho = sum(elasticIng_1bl, na.rm = TRUE)) 
+summary(sum_ingresos)
+
+test_hogares <- left_join(test_hogares, sum_ingresos)
+
+# Determinar pobreza ----
+test_hogares <- test_hogares %>% 
+  mutate(Pobre_ingreso = ifelse(Ingreso_predicho < Lp * Npersug,
+                                yes = 1,
+                                no = 0))
+
+table(test_hogares$Pobre_ingreso)
+
+
+
+
+
+
+
+
+# Exportar tabla con predicciones finales ----
+Pobre_clasificacion <- test_hogares_t[,c("id", "Pobre_clasificacion")] 
+Pobre_ingreso <- test_hogares[,c("id", "Pobre_ingreso")]
+
+prediccion_final <- left_join(Pobre_clasificacion, Pobre_ingreso, by="id")
+
+write.csv(prediccion_final, "document/predictions_capacho_beltran_gonzalez_c4_r4.csv", row.names = FALSE)
