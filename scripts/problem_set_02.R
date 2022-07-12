@@ -1209,3 +1209,79 @@ elasticIng_2bl
 
 # Ajuste del modelo
 RMSE_elastic2 <- elasticIng_2bl[["results"]][["RMSE"]]
+
+#   ** 3.3 Modelo 5 ----
+elasticIng_3 <- train(y_laboral ~ microEmpresa2 + Oficio + experiencia + experiencia2, 
+                      data       = train_personas, 
+                      method     = "glmnet",
+                      trControl  = trainControl("cv", number = 5),
+                      preProcess = c("center", "scale"))
+elasticIng_3
+
+elasticIng_3bl <- train(y_laboral ~ microEmpresa2 + Oficio + experiencia + experiencia2, 
+                        data       = train_personas, 
+                        method     = "glmnet",
+                        trControl  = trainControl("cv", number = 5),
+                        tuneGrid   = expand.grid(alpha = 0.1, lambda = 566.7648),
+                        preProcess = c("center", "scale"))
+elasticIng_3bl
+
+# Ajuste del modelo
+RMSE_elastic3 <- elasticIng_3bl[["results"]][["RMSE"]]
+
+#   ** 3.4 Modelo 6 ----
+elasticIng_4 <- train(y_laboral ~ microEmpresa2 + segundoTrabajo2 + edad + edad2, 
+                      data       = train_personas, 
+                      method     = "glmnet",
+                      trControl  = trainControl("cv", number = 5),
+                      preProcess = c("center", "scale"))
+elasticIng_4
+
+elasticIng_4bl <- train(y_laboral ~ microEmpresa2 + segundoTrabajo2 + edad + edad2, 
+                        data       = train_personas, 
+                        method     = "glmnet",
+                        trControl  = trainControl("cv", number = 5),
+                        tuneGrid   = expand.grid(alpha = 0.1, lambda = 1042.294),
+                        preProcess = c("center", "scale"))
+elasticIng_4bl
+
+# Ajuste del modelo
+RMSE_elastic4 <- elasticIng_4bl[["results"]][["RMSE"]]
+
+#   ** 3.5 Modelo 7 ----
+elasticIng_5 <- train(y_laboral ~ microEmpresa2 + segundoTrabajo2 + educ + Oficio, 
+                      data       = train_personas, 
+                      method     = "glmnet",
+                      trControl  = trainControl("cv", number = 5),
+                      preProcess = c("center", "scale"))
+elasticIng_5
+
+elasticIng_5bl <- train(y_laboral ~ microEmpresa2 + segundoTrabajo2 + educ + Oficio, 
+                        data       = train_personas, 
+                        method     = "glmnet",
+                        trControl  = trainControl("cv", number = 5),
+                        tuneGrid   = expand.grid(alpha = 0.1, lambda = 1042.294),
+                        preProcess = c("center", "scale"))
+elasticIng_5bl
+
+# Ajuste del modelo
+RMSE_elastic5 <- elasticIng_5bl[["results"]][["RMSE"]]
+
+#   ** 3.6 Modelo 8 ----
+elasticIng_6 <- train(y_laboral ~ microEmpresa2 + segundoTrabajo2 + educ, 
+                      data       = train_personas, 
+                      method     = "glmnet",
+                      trControl  = trainControl("cv", number = 5),
+                      preProcess = c("center", "scale"))
+elasticIng_6
+
+elasticIng_6bl <- train(y_laboral ~ microEmpresa2 + segundoTrabajo2 + educ, 
+                        data       = train_personas, 
+                        method     = "glmnet",
+                        trControl  = trainControl("cv", number = 5),
+                        tuneGrid   = expand.grid(alpha = 1, lambda = 1042.294),
+                        preProcess = c("center", "scale"))
+elasticIng_6bl
+
+# Ajuste del modelo
+RMSE_elastic6 <- elasticIng_6bl[["results"]][["RMSE"]]
