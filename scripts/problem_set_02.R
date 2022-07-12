@@ -1158,3 +1158,54 @@ predict.regsubsets = function(object, newdata, id, ...) {
 pred_bestIng_1 <- predict.regsubsets(bestIng_1, newdata = datos_train, id = 4)
 RMSE_bestIng_1 <- sqrt(mean((datos_train$y_laboral - pred_bestIng_1)^2))
 
+
+# 2. Backward Stepwise Selection ----
+backwardIng_1 <- train(y_laboral ~ .,
+                       data = datos_train,
+                       method="leapBackward",
+                       trControl = trainControl(method = "cv", number=5))
+backwardIng_1
+summary(backwardIng_1$finalModel)
+
+pred_backward <- predict(backwardIng_1, newdata = datos_train)
+RMSE_backward <- sqrt(mean((datos_train$y_laboral - pred_backward)^2))
+
+# 3. Elastic net y validacion cruzada en K-conjuntos (K-fold Cross-Validation) ---- 
+
+#   ** 3.1 Modelo 3 ---- 
+elasticIng_1 <- train(y_laboral ~ microEmpresa2 + Ocupado2 + educ + Oficio, 
+                      data       = train_personas, 
+                      method     = "glmnet",
+                      trControl  = trainControl("cv", number = 5),
+                      preProcess = c("center", "scale"))
+elasticIng_1
+
+elasticIng_1bl <- train(y_laboral ~ microEmpresa2 + Ocupado2 + educ + Oficio,
+                        data       = train_personas, 
+                        method     = "glmnet",
+                        trControl  = trainControl("cv", number = 5),
+                        tuneGrid   = expand.grid(alpha = 0.1, lambda = 1042.294),
+                        preProcess = c("center", "scale"))
+elasticIng_1bl
+
+# Ajuste del modelo
+RMSE_elastic1 <- elasticIng_1bl[["results"]][["RMSE"]]
+
+#   ** 3.2 Modelo 4 ----
+elasticIng_2 <- train(y_laboral ~ jefeHogar2 + mujer2 + jefeHogar_mujer2 + segundoTrabajo2, 
+                      data       = train_personas, 
+                      method     = "glmnet",
+                      trControl  = trainControl("cv", number = 5),
+                      preProcess = c("center", "scale"))
+elasticIng_2
+
+elasticIng_2bl <- train(y_laboral ~ jefeHogar2 + mujer2 + jefeHogar_mujer2 + segundoTrabajo2, 
+                        data       = train_personas, 
+                        method     = "glmnet",
+                        trControl  = trainControl("cv", number = 5),
+                        tuneGrid   = expand.grid(alpha = 0.55, lambda = 1042.294),
+                        preProcess = c("center", "scale"))
+elasticIng_2bl
+
+# Ajuste del modelo
+RMSE_elastic2 <- elasticIng_2bl[["results"]][["RMSE"]]
