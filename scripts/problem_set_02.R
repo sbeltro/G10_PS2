@@ -1285,3 +1285,57 @@ elasticIng_6bl
 
 # Ajuste del modelo
 RMSE_elastic6 <- elasticIng_6bl[["results"]][["RMSE"]]
+
+# Comparar error de prediccion promedio de los modelos ----
+MSE_modelos <- data.frame(matrix(NA, 8, 2))
+colnames(MSE_modelos) <- c("Modelo", "MSE")
+
+MSE_modelos[1,1] = "M.1"
+MSE_modelos[2,1] = "M.2"
+MSE_modelos[3,1] = "M.3"
+MSE_modelos[4,1] = "M.4"
+MSE_modelos[5,1] = "M.5"
+MSE_modelos[6,1] = "M.6"
+MSE_modelos[7,1] = "M.7"
+MSE_modelos[8,1] = "M.8"
+
+MSE_modelos[1,2] = RMSE_bestIng_1
+MSE_modelos[2,2] = RMSE_backward
+MSE_modelos[3,2] = RMSE_elastic1
+MSE_modelos[4,2] = RMSE_elastic2
+MSE_modelos[5,2] = RMSE_elastic3
+MSE_modelos[6,2] = RMSE_elastic4
+MSE_modelos[7,2] = RMSE_elastic5
+MSE_modelos[8,2] = RMSE_elastic6
+
+write_xlsx(MSE_modelos, "views/MSE_modelos.xlsx")
+
+png("views/G3.png", width = 499, height = 290)
+MSE_m_grafico1 <- ggplot(MSE_modelos, aes(x = Modelo, y = MSE, group = 1)) +
+  geom_line(color="navyblue")                              +
+  geom_point()                                             +
+  theme(axis.text.x = element_text(angle = 90))            +
+  labs(x = "Modelo", y = "RMSE")                           +
+  theme_test()
+dev.off()
+
+# Prediccion modelo seleccionado ----
+train_personas$elasticIng_1bl <- predict(elasticIng_1bl, newx = train_personas)
+
+sum_ingresos <- train_personas %>% 
+  group_by(id) %>% 
+  summarize(Ingreso_predicho = sum(elasticIng_1bl, na.rm = TRUE)) 
+summary(sum_ingresos)
+
+train_hogares_Ing <- left_join(train_hogares_Ing, sum_ingresos)
+
+# Determinar pobreza 
+train_hogares_Ing <- train_hogares_Ing %>% 
+  mutate(Pobre_construida = ifelse(Ingreso_predicho < Lp * Npersug,
+                                   yes = 1,
+                                   no = 0))
+
+table(train_hogares_Ing$Pobre)
+table(train_hogares_Ing$Pobre_construida)
+with(train_hogares_Ing,prop.table(table(Pobre, Pobre_construida)))
+
