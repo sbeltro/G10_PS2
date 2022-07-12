@@ -162,3 +162,157 @@ for (i in recode_vars2){
                               yes = 0, 
                               train_personas[,i])
 }
+
+#  ** Hogares ----
+
+# Cargar la base de datos
+train_hogares <- readRDS("stores/dataPS2RDS/train_hogares.rds")
+
+#  ** Base agregada ----
+train <- merge(train_personas, train_hogares, by = "id", all = TRUE)
+
+#    *** Limpieza de la base ----
+train <- train %>% 
+  mutate(subFamiliar    = case_when(subFamiliar == 1 ~ 1,
+                                    subFamiliar == 2 | subFamiliar == 9 | is.na(subFamiliar) == T ~ 0),
+         subEducativo   = case_when(subEducativo == 1 ~ 1, 
+                                    subEducativo == 2 | subEducativo == 9 | is.na(subEducativo) == T ~ 0),
+         P7510s1        = case_when(P7510s1 == 1 ~ 1,
+                                    P7510s1 == 2 | P7510s1 == 9 | is.na(P7510s1) == T ~ 0),
+         P7510s2        = case_when(P7510s2 == 1 ~ 1,
+                                    P7510s2 == 2 | P7510s2 == 9 | is.na(P7510s2) == T ~ 0),
+         P7510s3        = case_when(P7510s3 == 1 ~ 1,
+                                    P7510s3 == 2 | P7510s3 == 9 | is.na(P7510s3) == T ~ 0),
+         profesional = case_when(educ == 0|educ == 3|educ == 8 ~ 0, 
+                                 educ == 12|educ == 16|educ == 20 ~ 1),
+         personaxCuarto = Nper / P5010)
+
+Subsidiado_hg <- train %>% 
+  group_by(id) %>% 
+  summarize(subsidiado = max(subsidiado))
+
+subFamiliar_hg <- train %>%
+  group_by(id) %>%
+  summarize(subFamiliar = max(subFamiliar))
+
+subEducativo_hg <- train %>% 
+  group_by(id) %>%
+  summarize(subEducativo = max(subEducativo))
+
+ayudaHogaresnal_hg <- train %>%
+  group_by(id) %>%
+  summarize(P7510s1 = max(P7510s1))
+
+ayudaHogaresext_hg <- train %>%
+  group_by(id) %>%
+  summarize(P7510s2 = max(P7510s2))
+
+ayudaInstituciones_hg <- train %>%
+  group_by(id) %>%
+  summarize(P7510s3 = max(P7510s3))
+
+profesional_hg <- train %>%
+  group_by(id) %>%
+  summarize(profesional = max(profesional))
+
+personaxCuarto_hg <- train %>%
+  group_by(id) %>% 
+  summarize(personaxCuarto[1])
+
+microempresa_hg <- train %>% 
+  group_by(id) %>% 
+  summarize(microempresa_hg = max(microEmpresa))
+
+formal_hg <- train %>% 
+  group_by(id) %>% 
+  summarize(formal_hg = max(formal))
+
+educ_hg <- train %>% 
+  group_by(id) %>% 
+  summarize(educ_hg = mean(educ))
+
+train_hogares <- left_join(train_hogares, Subsidiado_hg, by = "id")
+train_hogares <- left_join(train_hogares, subFamiliar_hg, by = "id")
+train_hogares <- left_join(train_hogares, subEducativo_hg, by = "id")
+train_hogares <- left_join(train_hogares, ayudaHogaresnal_hg, by = "id")
+train_hogares <- left_join(train_hogares, ayudaHogaresext_hg, by = "id")
+train_hogares <- left_join(train_hogares, ayudaInstituciones_hg, by = "id")
+train_hogares <- left_join(train_hogares, profesional_hg, by = "id")
+train_hogares <- left_join(train_hogares, personaxCuarto_hg, by = "id")
+train_hogares <- left_join(train_hogares, microempresa_hg, by = "id")
+train_hogares <- left_join(train_hogares, formal_hg, by = "id")
+train_hogares <- left_join(train_hogares, educ_hg, by = "id")
+
+colnames(train_hogares)[which(colnames(train_hogares)=="subsidiado")]        = "Subsidiado_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="subFamiliar")]       = "subFamiliar_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="subEducativo")]      = "subEducativo_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="P7510s1")]           = "ayudaHogaresnal_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="P7510s2")]           = "ayudaHogaresext_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="P7510s3")]           = "ayudaInstituciones_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="profesional")]       = "profesional_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="personaxCuarto[1]")] = "personaxCuarto_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="microempresa_hg")]   = "microempresa_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="formal_hg")]         = "formal_hg"
+colnames(train_hogares)[which(colnames(train_hogares)=="educ_hg")]          = "educ_hg"
+
+train_hogares_Ing <- train_hogares
+
+# Seleccionar variables de interes
+train_hogares <- train_hogares %>% 
+  select(Pobre, Subsidiado_hg, subFamiliar_hg, subEducativo_hg, ayudaHogaresnal_hg, ayudaHogaresext_hg, 
+         ayudaInstituciones_hg, profesional_hg, personaxCuarto_hg, microempresa_hg, formal_hg,
+         educ_hg, Nper, id, Lp, Npersug)
+
+# Modificar variables dummy a factor
+train_hogares <- train_hogares %>%
+  mutate(Subsidiado_hg         = factor(Subsidiado_hg, levels = c(1,0)),
+         subFamiliar_hg        = factor(subFamiliar_hg, levels = c(1,0)),
+         subEducativo_hg       = factor(subEducativo_hg, levels = c(1,0)),
+         ayudaHogaresnal_hg    = factor(ayudaHogaresnal_hg, levels = c(1,0)),
+         ayudaHogaresext_hg    = factor(ayudaHogaresext_hg, levels = c(1,0)),
+         ayudaInstituciones_hg = factor(ayudaInstituciones_hg, levels = c(1,0)),
+         profesional_hg        = factor(profesional_hg, levels = c(1,0)),
+         microempresa_hg       = factor(microempresa_hg, levels = c(1,0)),
+         formal_hg             = factor(formal_hg, levels = c(1,0)),
+         Pobre                 = factor(Pobre, levels = c(1,0)))
+
+# Renombrar variables tipo factor
+train_hogares$Pobre <- factor((train_hogares$Pobre), 
+                              levels = c(0, 1), 
+                              labels = c("No", "Si"))
+
+train_hogares$Subsidiado_hg <- factor((train_hogares$Subsidiado_hg), 
+                                      levels = c(0, 1), 
+                                      labels = c("No", "Si"))
+
+train_hogares$subFamiliar_hg <- factor((train_hogares$subFamiliar_hg), 
+                                       levels = c(0, 1), 
+                                       labels = c("No", "Si"))
+
+train_hogares$subEducativo_hg <- factor((train_hogares$subEducativo_hg), 
+                                        levels = c(0, 1), 
+                                        labels = c("No", "Si"))
+
+train_hogares$ayudaHogaresnal_hg <- factor((train_hogares$ayudaHogaresnal_hg), 
+                                           levels = c(0, 1), 
+                                           labels = c("No", "Si"))
+
+train_hogares$ayudaHogaresext_hg <- factor((train_hogares$ayudaHogaresext_hg), 
+                                           levels = c(0, 1), 
+                                           labels = c("No", "Si"))
+
+train_hogares$ayudaInstituciones_hg <- factor((train_hogares$ayudaInstituciones_hg), 
+                                              levels = c(0, 1), 
+                                              labels = c("No", "Si"))
+
+train_hogares$profesional_hg <- factor((train_hogares$profesional_hg), 
+                                       levels = c(0, 1), 
+                                       labels = c("No", "Si"))
+
+train_hogares$microempresa_hg <- factor((train_hogares$microempresa_hg), 
+                                        levels = c(0, 1), 
+                                        labels = c("No", "Si"))
+
+train_hogares$formal_hg <- factor((train_hogares$formal_hg), 
+                                  levels = c(0, 1), 
+                                  labels = c("No", "Si"))
