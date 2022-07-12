@@ -593,3 +593,126 @@ ed_tab_test_ex <- print(ed_tab_test, quote = FALSE, noSpaces = TRUE, printToggle
   as_tibble()
 
 write_xlsx(ed_tab_test_ex, "views/ed_test.xlsx")
+
+# Graficas de interes ----
+test_hogares$dum <- "A"
+
+# Base Train ----
+gr_subs_tr <- ggplot(train_hogares, aes(Pobre, fill = Subsidiado_hg)) +
+  geom_bar(position = "fill", width = 0.5) + 
+  scale_fill_manual(values=c('00FFFFFF', '#63DEF1')) +
+  theme(legend.position = "none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title=element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Subsidio (Train)") +
+  ylab("Proporcion")
+
+gr_ayuda_tr <- ggplot(train_hogares, aes(Pobre, fill = ayudaInstituciones_hg)) +
+  geom_bar(position="fill", width = 0.5) + 
+  scale_fill_manual(values=c('00FFFFFF', '#E69F00')) +
+  theme(legend.position="none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Ayuda (Train)") +
+  ylab("Proporcion")
+
+gr_personas_tr <- ggplot(data = train_hogares, mapping=aes(x = Pobre, y = personaxCuarto_hg)) +
+  stat_summary(fun.data = mean_sdl, geom = "bar", width = 0.3, fill = 'pink') +
+  theme(legend.position = "none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text( hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Personas por Cuarto (Train)") +
+  ylab("Personas x Cuarto")
+
+gr_educ_tr <- ggplot(data = train_hogares, mapping=aes(x = Pobre, y = educ_hg)) + 
+  stat_summary(fun.data = mean_sdl, geom = "bar", width = 0.3, fill = "purple") +
+  theme(legend.position = "none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Educacion (Train)") +
+  ylab("Años de Educacion")
+
+# Base Test ----
+gr_subs_te <- ggplot(test_hogares, aes(dum, fill = as.factor(Subsidiado_hg))) +
+  geom_bar(position = "fill", width = 0.3) + 
+  scale_fill_manual(values = c('00FFFFFF', '#63DEF1')) +
+  theme(axis.title.x = element_text(colour = "white"),
+        axis.text.x = element_text(colour = "white"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Subsidio (Test)") +
+  ylab("Proporcion")
+
+gr_ayuda_te <- ggplot(test_hogares, aes(dum, fill = as.factor(ayudaInstituciones_hg))) +
+  geom_bar(position = "fill", width = 0.3) + 
+  scale_fill_manual(values = c('00FFFFFF','#E69F00')) +
+  theme(axis.title.x = element_text(colour = "white"),
+        axis.text.x = element_text(colour = "white"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Ayuda (Test)") +
+  ylab("Proporcion")
+
+gr_personas_te <- ggplot(data=test_hogares, mapping=aes(x=dum, y=personaxCuarto_hg)) + 
+  stat_summary(fun.data = mean_sdl, geom="bar", width = 0.3, fill = 'pink') +
+  theme(axis.title.x = element_text(colour = "white"),
+        axis.text.x = element_text(colour = "white"),
+        axis.ticks.x = element_blank(),
+        legend.position ="none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Personas por Cuarto (Train)") +
+  ylab("Personas x Cuarto")
+
+gr_educ_te <- ggplot(data=test_hogares, mapping=aes(x=dum, y=educ_hg)) + 
+  stat_summary(fun.data = mean_sdl, geom = "bar", width = 0.3, fill = "purple") +
+  scale_fill_manual(values = c('00FFFFFF', '#E69F00')) +
+  theme(axis.title.x = element_text(colour = "white"),
+        axis.text.x = element_text(colour = "white"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none", 
+        panel.background = element_rect(fill = "white",
+                                        colour = "black",
+                                        size = 0.5, 
+                                        linetype = "solid"),
+        plot.title = element_text(hjust = 0.5, vjust = 0.5)) +
+  ggtitle("Educacion (Train)") + 
+  ylab("Años de Educacion")
+
+# Unir las graficas 
+png("views/G1.png", width = 900, height = 450)
+ggarrange(gr_subs_tr, 
+          gr_ayuda_tr,
+          gr_personas_tr,
+          gr_educ_tr,
+          gr_subs_te,
+          gr_ayuda_te,
+          gr_personas_te,
+          gr_educ_te,
+          ncol = 4, nrow = 2)
+dev.off()
