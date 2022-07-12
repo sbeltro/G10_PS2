@@ -1111,3 +1111,50 @@ legend(x = "right",
 abline(a = 0, b = 1)
 dev.off()
 
+# Estimar fuera de muestra y determinar pobreza ----
+test_hogares_t$logitn <- predict(logitn, newdata = test_hogares_t, type="response")
+
+# Evaluar la variable dependiente calculada con la regla r para determinar si espobre o no
+test_hogares_t <- test_hogares_t %>%
+  mutate(Pobre_clasificacion = ifelse(logitn > r, 
+                                      yes = 1, 
+                                      no = 0))
+
+#Obtener los ratios de los hogares pobres y no pobres
+table(test_hogares_t$Pobre_clasificacion)
+
+texreg::htmlreg(logitn, file = 'views/modelo_logitn.doc')
+
+
+
+
+
+
+
+
+# Modelos de regresion del ingreso ----
+
+#Se define la semilla para poder replicar los resultados
+set.seed(101010)
+
+# Seleccionar variables de interes
+datos_train <- train_personas %>% 
+  select(y_laboral, edad, edad2, experiencia, experiencia2, educ, mujer2, jefeHogar2, formal2, 
+         microEmpresa2, segundoTrabajo2, Ocupado2, Oficio, jefeHogar_mujer2)
+
+# 1. Best Subset Selection ----
+bestIng_1 <- regsubsets(y_laboral ~ ., 
+                        method = "exhaustive", 
+                        data = datos_train)
+summary(bestIng_1)
+
+predict.regsubsets = function(object, newdata, id, ...) {
+  form = as.formula(object$call[[2]])
+  mat = model.matrix(form, newdata)
+  coefi = coef(object, id = id)
+  mat[, names(coefi)] %*% coefi
+}
+
+pred_bestIng_1 <- predict.regsubsets(bestIng_1, newdata = datos_train, id = 4)
+RMSE_bestIng_1 <- sqrt(mean((datos_train$y_laboral - pred_bestIng_1)^2))
+
