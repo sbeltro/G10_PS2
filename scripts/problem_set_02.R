@@ -562,3 +562,34 @@ test_hogares <- test_hogares %>%
          ayudaHogaresext_hg = factor(ayudaHogaresext_hg),
          ayudaInstituciones_hg = factor(ayudaInstituciones_hg),
          profesional_hg = factor(profesional_hg))
+
+
+
+
+# Estadisticas descriptivas ----
+# Base Train ----
+ed_train <- c("Subsidiado_hg", "subFamiliar_hg", "subEducativo_hg", "ayudaHogaresnal_hg", "ayudaHogaresext_hg",
+              "ayudaInstituciones_hg", "profesional_hg", "personaxCuarto_hg")
+
+ed_tab_train <- CreateTableOne(data = train_hogares,
+                               strata = "Pobre",
+                               vars = ed_train,
+                               argsApprox = list(correct = TRUE))
+
+ed_tab_train_ex <- print(ed_tab_train, quote = FALSE, noSpaces = TRUE, printToggle = FALSE) %>%
+  as_tibble()
+
+write_xlsx(ed_tab_train_ex, "views/ed_train.xlsx")
+
+# Base Test ----
+ed_test <- c("Subsidiado_hg", "subFamiliar_hg", "subEducativo_hg", "ayudaHogaresnal_hg", "ayudaHogaresext_hg",
+             "ayudaInstituciones_hg", "profesional_hg", "personaxCuarto_hg")
+
+ed_tab_test <- CreateTableOne(data = test_hogares,
+                              vars = ed_test,
+                              argsApprox = list(correct = TRUE))
+
+ed_tab_test_ex <- print(ed_tab_test, quote = FALSE, noSpaces = TRUE, printToggle = FALSE) %>%
+  as_tibble()
+
+write_xlsx(ed_tab_test_ex, "views/ed_test.xlsx")
