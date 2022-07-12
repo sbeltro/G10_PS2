@@ -563,9 +563,6 @@ test_hogares <- test_hogares %>%
          ayudaInstituciones_hg = factor(ayudaInstituciones_hg),
          profesional_hg = factor(profesional_hg))
 
-
-
-
 # Estadisticas descriptivas ----
 # Base Train ----
 ed_train <- c("Subsidiado_hg", "subFamiliar_hg", "subEducativo_hg", "ayudaHogaresnal_hg", "ayudaHogaresext_hg",
@@ -716,3 +713,89 @@ ggarrange(gr_subs_tr,
           gr_educ_te,
           ncol = 4, nrow = 2)
 dev.off()
+
+# Modelos de clasificacion  ----
+
+# Crear regla y bases de prueba para entrenar los modelos
+r <- 0.3
+
+prueba1 <- train_hogares %>% 
+  select(Pobre)
+prueba1 <- prueba1 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+prueba2 <- train_hogares %>%
+  select(Pobre)
+prueba2 <- prueba2 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+prueba3 <- train_hogares %>%
+  select(Pobre)
+prueba3 <- prueba3 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+prueba4 <- train_hogares %>%
+  select(Pobre)
+prueba4 <- prueba4 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+prueba5 <- train_hogares %>%
+  select(Pobre)
+prueba5 <- prueba5 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+prueba6 <- train_hogares %>%
+  select(Pobre)
+prueba6 <- prueba6 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+prueba7 <- train_hogares %>%
+  select(Pobre)
+prueba7 <- prueba7 %>% 
+  mutate(Pobre = case_when(Pobre == "No" ~ 0,
+                           Pobre == "Si" ~ 1))
+
+# Best Subset Selection ----
+best <- regsubsets(Pobre ~ ., 
+                   method = "exhaustive", 
+                   data = train_hogares)
+# 1. Logit ----
+logitn <- glm(Pobre ~ Subsidiado_hg + ayudaInstituciones_hg + personaxCuarto_hg + educ_hg, 
+              data = train_hogares, 
+              family = "binomial")
+
+# Crear los predictores para cada observación y evaluar con la condicion de r
+prueba1$logitp <- predict(logitn, newdata = train_hogares, type="response")
+prueba1$logitp <- ifelse(prueba1$logitp > r, 
+                         yes = 1, 
+                         no  = 0)
+
+# Evaluar desempeño del modelo
+cm_prob1 <- confusionMatrix(data = factor(prueba1$logitp), 
+                            reference = factor(prueba1$Pobre), 
+                            mode = "sens_spec" , 
+                            positive = "1")
+cm_prob1
+
+# Crear las variable de clase predict y performance del paquete ROCR
+prelogitn <- prediction(predict(logitn), prueba1$Pobre)
+perlogitn <- performance(prelogitn, "tpr", "fpr")
+
+# AUC
+auc_mod1 <- performance(prelogitn, measure = "auc")
+auc_mod1 <- auc_mod1@y.values[[1]]
+
+# Calcular otros indicadores
+cm1 <- cm_prob1$table
+
+# Ratio Falsos Positivos
+fp_mod1 <- cm1[2,1] / sum(cm1[2,])
+
+# Ratio Falsos Negativos
+fn_mod1 <- cm1[1,2] / sum(cm1[1,])
