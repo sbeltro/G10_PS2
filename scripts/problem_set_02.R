@@ -799,3 +799,105 @@ fp_mod1 <- cm1[2,1] / sum(cm1[2,])
 
 # Ratio Falsos Negativos
 fn_mod1 <- cm1[1,2] / sum(cm1[1,])
+
+# 2. Logit + Two-Class Summary + Validacion cruzada en K-conjuntos ----
+
+# Crear el control de two class summary
+ctrl_two <- trainControl(method = "cv",
+                         number = 5,
+                         summaryFunction = twoClassSummary,
+                         classProbs = TRUE,
+                         verbose=FALSE,
+                         savePredictions = T)
+
+# Establecer una semilla y estimar el modelo
+set.seed(33)
+logitTwoclass <- train(Pobre ~ ayudaInstituciones_hg + personaxCuarto_hg,
+                       data = train_hogares,
+                       method = "glm",
+                       trControl = ctrl_two,
+                       family = "binomial",
+                       preProcess = c("center", "scale"))
+
+# Crear los predictores para cada observación y testearlos con la condión de r
+prueba2$locp <- predict(logitTwoclass, newdata = train_hogares, type = "prob")[,1]
+prueba2$locp <- ifelse(prueba2$locp > r, 
+                       yes = 1, 
+                       no  = 0)
+
+# Evaluar desempeño del modelo
+cm_prob2 <- confusionMatrix(data = factor(prueba2$locp), 
+                            reference = factor(prueba2$Pobre), 
+                            mode = "sens_spec",
+                            positive="1")
+cm_prob2
+
+#Crear las variable de clase predict y performance del paquete ROCR
+prelog2 <- prediction(predict(logitTwoclass, type = "prob")[,2], prueba2$Pobre)
+perlog2 <- performance(prelog2, "tpr", "fpr")
+
+#AUC
+auc_mod2 <- performance(prelog2, measure = "auc")
+auc_mod2 <- auc_mod2@y.values[[1]]
+
+# Calcular otros indicadores
+cm2 <- cm_prob2$table
+
+# Ratio Falsos Positivos
+fp_mod2 <- cm2[2,1] / sum(cm2[2,])
+
+# Ratio Falsos Negativos
+fn_mod2 <- cm2[1,2] / sum(cm2[1,])
+
+# 3. Logit + Five-Stats Summary + Validacion cruzada en K-conjuntos ----
+
+#Crear la función que contenga five stats
+fiveStats <- function(...) c(twoClassSummary(...), defaultSummary(...))
+
+#Crear un nuevo control con la función de 5 stats 
+ctrl <- trainControl(method = "cv",
+                     number = 5,
+                     summaryFunction = fiveStats,
+                     classProbs = TRUE,
+                     verbose=FALSE,
+                     savePredictions = T)
+
+#Establecer una semilla y estimar el modelo
+set.seed(33)
+logitFiveStats <- train(Pobre ~ microempresa_hg + educ_hg + ayudaInstituciones_hg,
+                        data = train_hogares,
+                        method = "glm",
+                        trControl = ctrl,
+                        family = "binomial",
+                        preProcess = c("center", "scale"))
+
+#Crear los predictores para cada observación y evaluar con la condicion de r
+prueba3$loc5 <- predict(logitFiveStats, newdata = train_hogares, type = "prob")[,1]
+prueba3$loc5 <- ifelse(prueba3$loc5 > r, 
+                       yes = 1, 
+                       no  = 0)
+
+# Evaluar desempeño del modelo
+cm_prob3 <- confusionMatrix(data = factor(prueba3$loc5) , 
+                            reference = factor(prueba3$Pobre), 
+                            mode = "sens_spec", 
+                            positive="1")
+
+cm_prob3
+
+# Crear las variable de clase predict y performance del paquete ROCR
+prelog5 <- prediction(predict(logitFiveStats, type = "prob")[,2], prueba3$Pobre)
+perlog5 <- performance(prelog5, "tpr", "fpr")
+
+# AUC
+auc_mod3 <- performance(prelog5, measure = "auc")
+auc_mod3 <- auc_mod3@y.values[[1]]
+
+# Calcular otros indicadores
+cm3 <- cm_prob3$table
+
+# Ratio Falsos Positivos
+fp_mod3 <- cm3[2,1] / sum(cm3[2,])
+
+# Ratio Falsos Negativos
+fn_mod3 <- cm3[1,2] / sum(cm3[1,])
