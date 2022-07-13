@@ -1090,7 +1090,7 @@ Class_models[5,4] = fn_mod5
 Class_models[6,4] = fn_mod6
 
 #Exportar la tabla a un excel
-write_xlsx(Class_modelos, "views/Class_models.xlsx")
+write_xlsx(Class_models, "views/Class_models.xlsx")
 
 #Crear una gráfica que contenga las curvas de ROC de los 6 modelos y exportar la imagen
 png("views/G2.png", width = 564, height = 422)
@@ -1124,13 +1124,6 @@ test_hogares_t <- test_hogares_t %>%
 table(test_hogares_t$Pobre_clasificacion)
 
 texreg::htmlreg(logitn, file = 'views/modelo_logitn.doc')
-
-
-
-
-
-
-
 
 # Modelos de regresion del ingreso ----
 
@@ -1373,13 +1366,6 @@ test_hogares <- test_hogares %>%
 
 table(test_hogares$Pobre_ingreso)
 
-
-
-
-
-
-
-
 # Exportar tabla con predicciones finales ----
 Pobre_clasificacion <- test_hogares_t[,c("id", "Pobre_clasificacion")] 
 Pobre_ingreso <- test_hogares[,c("id", "Pobre_ingreso")]
@@ -1387,3 +1373,4 @@ Pobre_ingreso <- test_hogares[,c("id", "Pobre_ingreso")]
 prediccion_final <- left_join(Pobre_clasificacion, Pobre_ingreso, by="id")
 
 write.csv(prediccion_final, "document/predictions_capacho_beltran_gonzalez_c4_r4.csv", row.names = FALSE)
+
